@@ -466,4 +466,8 @@ function renderUnlockPage(state) {
 </body>
 </html>`;
 }
-module.exports = { renderPage: renderPage, escapeHtml: escapeHtml };
+module.exports = {
+  renderPage: renderPage,
+  renderUnlockPage: renderUnlockPage,
+  escapeHtml: escapeHtml
+};
