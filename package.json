@@ -1,5 +1,11 @@
 {
   "name": "imageupload-gallery",
   "version": "1.0.0",
-  "private": true
+  "private": true,
+  "scripts": {
+    "dev": "node server/serve.js"
+  },
+  "devDependencies": {
+    "express": "^4.19.2"
+  }
 }
