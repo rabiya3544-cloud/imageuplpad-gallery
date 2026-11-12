@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "node server/serve.js"
   },
+  "dependencies": {
+    "@libsql/client": "^0.15.0"
+  },
   "devDependencies": {
     "express": "^4.19.2"
   }
