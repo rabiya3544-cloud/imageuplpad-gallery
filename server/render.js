@@ -370,5 +370,100 @@ ${renderScripts()}
 </body>
 </html>`;
 }
+/* ─── Unlock-only page (rendered at `/`) ──────────────────── */
+function renderUnlockPage(state) {
+  state = state || {};
+  var title = escapeHtml(state.title || 'ImageUpload · Unlock');
+  return `<!DOCTYPE html>
+<html lang="en" class="h-full overflow-hidden">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>${title}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="h-full overflow-hidden flex flex-col bg-[#0d1a1f] text-[#e5e7eb] antialiased">
+<div id="unlock-modal" class="fixed inset-0 bg-black/70 backdrop-blur-md z-[99999] flex items-center justify-center">
+  <div class="modal-box bg-[#0d1a1f]/95 border border-cyan-400/30 rounded-2xl p-6 max-w-[380px] w-[90%] shadow-2xl text-center">
+    <div class="text-5xl text-cyan-400 mb-3"><i class="fa-solid fa-lock"></i></div>
+    <h2 class="text-white text-base font-semibold mb-1">🔐 Unlock</h2>
+    <p id="unlock-hint" class="text-cyan-100/60 text-[10px] mb-4 max-w-[280px] mx-auto">Enter the password to unlock and retrieve your ImageUpload.app API key from the proxy.</p>
+    <input type="password" id="unlock-password" class="w-full bg-[#0d1a1f] border border-cyan-500/40 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-cyan-400 mb-3 placeholder:text-white/30" placeholder="Password…" autocomplete="current-password" enterkeyhint="go" />
+    <div id="unlock-error" class="text-red-400 text-[10px] mb-3 hidden"><i class="fa-solid fa-circle-exclamation mr-1"></i><span id="unlock-error-msg"></span></div>
+    <button id="unlock-btn" class="bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-2.5 rounded-lg text-sm font-semibold w-full disabled:opacity-60"><i class="fa-solid fa-key mr-1"></i><span>Unlock</span></button>
+    <p class="text-white/20 text-[7px] mt-4 tracking-wider">🔑 encrypted · secure</p>
+  </div>
+</div>
+<script>
+(function () {
+  var PROXY_AUTH_URL = 'https://imageupload-proxy.vercel.app/api/auth';
+  var APP_URL = '/app';
 
+  var pwd    = document.getElementById('unlock-password');
+  var btn    = document.getElementById('unlock-btn');
+  var err    = document.getElementById('unlock-error');
+  var errMsg = document.getElementById('unlock-error-msg');
+  var hint   = document.getElementById('unlock-hint');
+
+  try {
+    if (localStorage.getItem('imageupload_secret')) { location.replace(APP_URL); return; }
+  } catch (e) {}
+
+  function showErr(msg) { errMsg.textContent = msg; err.classList.remove('hidden'); }
+
+  async function doUnlock() {
+    if (btn.disabled) return;
+    var pw = pwd.value.trim();
+    err.classList.add('hidden');
+    if (!pw) { showErr('Enter a password.'); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Unlocking…';
+    hint.textContent = 'Contacting proxy…';
+
+    try {
+      var res = await fetch(PROXY_AUTH_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pw })
+      });
+      var json;
+      try { json = await res.json(); }
+      catch (e) { throw new Error('Proxy returned non-JSON (HTTP ' + res.status + ')'); }
+
+      if (!res.ok || !json.ok || !json.apiKey) {
+        showErr((json && json.error) || ('Unlock failed (HTTP ' + res.status + ')'));
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-key mr-1"></i>Unlock';
+        hint.textContent = 'Enter the password to unlock.';
+        return;
+      }
+
+      try { localStorage.setItem('imageupload_secret', json.apiKey); }
+      catch (e) { showErr('Could not save to localStorage — ' + e.message); btn.disabled = false; return; }
+
+      hint.textContent = '✅ Unlocked — loading…';
+      btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>Starting…';
+      setTimeout(function () { location.replace(APP_URL); }, 300);
+    } catch (e) {
+      showErr('Network error: ' + e.message);
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-key mr-1"></i>Unlock';
+      hint.textContent = 'Enter the password to unlock.';
+    }
+  }
+
+  btn.addEventListener('click', doUnlock);
+  pwd.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); doUnlock(); }
+  });
+  setTimeout(function () { pwd.focus(); }, 100);
+})();
+</script>
+</body>
+</html>`;
+}
 module.exports = { renderPage: renderPage, escapeHtml: escapeHtml };
