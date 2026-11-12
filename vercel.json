@@ -1,5 +1,6 @@
 {
   "rewrites": [
-    { "source": "/", "destination": "/api/render" }
+    { "source": "/",    "destination": "/api/render?page=unlock" },
+    { "source": "/app", "destination": "/api/render?page=app" }
   ]
 }
